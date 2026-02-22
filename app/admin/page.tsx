@@ -26,8 +26,9 @@ export default function AdminPage() {
     setLoadingPosts(true)
     const res = await fetch('/api/posts')
     const data = await res.json()
-    if (Array.isArray(data)) {
-      setPosts(data)
+    const postList = data.posts || data
+    if (Array.isArray(postList)) {
+      setPosts(postList)
       setPasswordConfirmed(true)
     }
     setLoadingPosts(false)
