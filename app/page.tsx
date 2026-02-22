@@ -387,25 +387,7 @@ export default function HomePage() {
                         letterSpacing: '0.05em'
                       }}>{k}</span>
                     ))}
-                    <a
-                      href={`https://translate.google.com/translate?sl=en&tl=he&u=${encodeURIComponent(post.url)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={e => e.stopPropagation()}
-                      className="he-btn"
-                      style={{
-                        fontSize: 9,
-                        color: muted,
-                        textDecoration: 'none',
-                        border: `1px solid ${border}`,
-                        borderRadius: 2,
-                        padding: '2px 6px',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      עברית
-                    </a>
-                  </div>
+                   </div>
                   <span style={{ fontSize: 10, color: muted, whiteSpace: 'nowrap', marginLeft: 8 }}>
                     {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                   </span>
