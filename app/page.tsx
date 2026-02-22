@@ -20,17 +20,9 @@ function estimateReadTime(text: string): number {
 }
 
 function decodeHtml(html: string): string {
-  return html
-    .replace(/&mdash;/g, '—')
-    .replace(/&ndash;/g, '–')
-    .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&rsquo;/g, "'")
-    .replace(/&lsquo;/g, "'")
-    .replace(/&rdquo;/g, '"')
-    .replace(/&ldquo;/g, '"')
-    .replace(/&hellip;/g, '…')
+  const txt = document.createElement('textarea')
+  txt.innerHTML = html
+  return txt.value
 }
 
 export default function HomePage() {
