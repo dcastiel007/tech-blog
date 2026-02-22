@@ -80,6 +80,7 @@ export default function HomePage() {
         .search-input:focus { outline: none; border-color: ${accent} !important; }
         .he-btn { transition: all 0.15s; }
         .he-btn:hover { background: #2563eb !important; color: #fff !important; border-color: #2563eb !important; }
+        .title-link:hover { text-decoration: underline !important; text-underline-offset: 4px; }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
         .post-card { animation: fadeUp 0.4s ease forwards; opacity: 0; }
       `}</style>
@@ -92,6 +93,7 @@ export default function HomePage() {
         zIndex: 100,
         background: bg,
         backdropFilter: 'blur(12px)',
+        direction: 'ltr',
       }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
@@ -236,17 +238,14 @@ export default function HomePage() {
           const post = filtered[0]
           const readTime = estimateReadTime(post.summary)
           return (
-            <a
-              href={post.url}
-              target="_blank"
-              rel="noopener noreferrer"
+            <div
               className="card post-card"
               style={{
                 display: 'block',
-                textDecoration: 'none',
-                color: 'inherit',
+                background: cardBg,
                 borderBottom: `1px solid ${border}`,
-                padding: '40px 0',
+                padding: '40px 28px',
+                marginTop: 1,
                 animationDelay: '0.05s'
               }}
             >
@@ -267,16 +266,24 @@ export default function HomePage() {
                   {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                 </span>
               </div>
-              <h2 style={{
-                fontFamily: "'Playfair Display', serif",
-                fontSize: 'clamp(28px, 4vw, 48px)',
-                fontWeight: 700,
-                lineHeight: 1.1,
-                letterSpacing: '-1px',
-                marginBottom: 16,
-                maxWidth: 800
-              }}>
-                {post.title}
+              <h2 style={{ marginBottom: 16, maxWidth: 800 }}>
+                <a
+                  href={post.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="title-link"
+                  style={{
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: 'clamp(28px, 4vw, 48px)',
+                    fontWeight: 700,
+                    lineHeight: 1.1,
+                    letterSpacing: '-1px',
+                    color: 'inherit',
+                    textDecoration: 'none',
+                  }}
+                >
+                  {post.title}
+                </a>
               </h2>
               <p style={{ fontSize: 15, color: dark ? '#aaa' : '#555', lineHeight: 1.7, maxWidth: 680, marginBottom: 20 }}>
                 {post.summary}
@@ -312,7 +319,7 @@ export default function HomePage() {
                   עברית
                 </a>
               </div>
-            </a>
+            </div>
           )
         })()}
 
@@ -327,16 +334,11 @@ export default function HomePage() {
           {filtered.slice(1).map((post, i) => {
             const readTime = estimateReadTime(post.summary)
             return (
-              <a
+              <div
                 key={post.id}
-                href={post.url}
-                target="_blank"
-                rel="noopener noreferrer"
                 className="card post-card"
                 style={{
                   display: 'block',
-                  textDecoration: 'none',
-                  color: 'inherit',
                   background: cardBg,
                   padding: '28px 24px',
                   animationDelay: `${0.05 * (i + 2)}s`
@@ -351,15 +353,24 @@ export default function HomePage() {
                   <span style={{ fontSize: 10, color: muted }}>{readTime}m</span>
                 </div>
 
-                <h3 style={{
-                  fontFamily: "'Playfair Display', serif",
-                  fontSize: 20,
-                  fontWeight: 700,
-                  lineHeight: 1.2,
-                  marginBottom: 10,
-                  letterSpacing: '-0.3px'
-                }}>
-                  {post.title}
+                <h3 style={{ marginBottom: 10 }}>
+                  <a
+                    href={post.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="title-link"
+                    style={{
+                      fontFamily: "'Playfair Display', serif",
+                      fontSize: 20,
+                      fontWeight: 700,
+                      lineHeight: 1.2,
+                      letterSpacing: '-0.3px',
+                      color: 'inherit',
+                      textDecoration: 'none',
+                    }}
+                  >
+                    {post.title}
+                  </a>
                 </h3>
 
                 <p style={{
@@ -387,12 +398,30 @@ export default function HomePage() {
                         letterSpacing: '0.05em'
                       }}>{k}</span>
                     ))}
-                   </div>
+                    <a
+                      href={`https://translate.google.com/translate?sl=en&tl=he&u=${encodeURIComponent(post.url)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={e => e.stopPropagation()}
+                      className="he-btn"
+                      style={{
+                        fontSize: 9,
+                        color: muted,
+                        textDecoration: 'none',
+                        border: `1px solid ${border}`,
+                        borderRadius: 2,
+                        padding: '2px 6px',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      עברית
+                    </a>
+                  </div>
                   <span style={{ fontSize: 10, color: muted, whiteSpace: 'nowrap', marginLeft: 8 }}>
                     {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                   </span>
                 </div>
-              </a>
+              </div>
             )
           })}
         </div>
