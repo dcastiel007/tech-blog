@@ -246,7 +246,8 @@ export default function HomePage() {
                 borderBottom: `1px solid ${border}`,
                 padding: '40px 28px',
                 marginTop: 1,
-                animationDelay: '0.05s'
+                animationDelay: '0.05s',
+                direction: 'ltr',
               }}
             >
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 16 }}>
@@ -341,7 +342,8 @@ export default function HomePage() {
                   display: 'block',
                   background: cardBg,
                   padding: '28px 24px',
-                  animationDelay: `${0.05 * (i + 2)}s`
+                  animationDelay: `${0.05 * (i + 2)}s`,
+                  direction: 'ltr',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
