@@ -22,7 +22,7 @@ function estimateReadTime(text: string): number {
 export default function HomePage() {
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
-  const [dark, setDark] = useState(true)
+  const [dark, setDark] = useState(false)
   const [search, setSearch] = useState('')
   const [activeTag, setActiveTag] = useState<string | null>(null)
 
@@ -78,6 +78,8 @@ export default function HomePage() {
         .tag:hover { background: ${accent} !important; color: #fff !important; }
         .search-input::placeholder { color: ${muted}; }
         .search-input:focus { outline: none; border-color: ${accent} !important; }
+        .he-btn { transition: all 0.15s; }
+        .he-btn:hover { background: #2563eb !important; color: #fff !important; border-color: #2563eb !important; }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
         .post-card { animation: fadeUp 0.4s ease forwards; opacity: 0; }
       `}</style>
@@ -279,7 +281,7 @@ export default function HomePage() {
               <p style={{ fontSize: 15, color: dark ? '#aaa' : '#555', lineHeight: 1.7, maxWidth: 680, marginBottom: 20 }}>
                 {post.summary}
               </p>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                 {post.keywords?.slice(0, 5).map(k => (
                   <span key={k} style={{
                     background: tagBg,
@@ -290,6 +292,25 @@ export default function HomePage() {
                     letterSpacing: '0.05em'
                   }}>{k}</span>
                 ))}
+                <a
+                  href={`https://translate.google.com/translate?sl=en&tl=he&u=${encodeURIComponent(post.url)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={e => e.stopPropagation()}
+                  className="he-btn"
+                  style={{
+                    fontSize: 10,
+                    color: muted,
+                    textDecoration: 'none',
+                    border: `1px solid ${border}`,
+                    borderRadius: 2,
+                    padding: '3px 8px',
+                    letterSpacing: '0.05em',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  עברית
+                </a>
               </div>
             </a>
           )
@@ -354,8 +375,8 @@ export default function HomePage() {
                   {post.summary}
                 </p>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                     {post.keywords?.slice(0, 2).map(k => (
                       <span key={k} style={{
                         background: tagBg,
@@ -366,6 +387,24 @@ export default function HomePage() {
                         letterSpacing: '0.05em'
                       }}>{k}</span>
                     ))}
+                    <a
+                      href={`https://translate.google.com/translate?sl=en&tl=he&u=${encodeURIComponent(post.url)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={e => e.stopPropagation()}
+                      className="he-btn"
+                      style={{
+                        fontSize: 9,
+                        color: muted,
+                        textDecoration: 'none',
+                        border: `1px solid ${border}`,
+                        borderRadius: 2,
+                        padding: '2px 6px',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      עברית
+                    </a>
                   </div>
                   <span style={{ fontSize: 10, color: muted, whiteSpace: 'nowrap', marginLeft: 8 }}>
                     {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
