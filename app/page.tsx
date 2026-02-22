@@ -300,7 +300,10 @@ export default function HomePage() {
                     display: 'block',
                   }}
                 >
-                  {decodeHtml(post.title)}, color: dark ? '#aaa' : '#555', lineHeight: 1.7, maxWidth: 680, marginBottom: 20 }}>
+                  {decodeHtml(post.title)}
+                </a>
+              </h2>
+              <p style={{ fontSize: 15, color: dark ? '#aaa' : '#555', lineHeight: 1.7, maxWidth: 680, marginBottom: 20 }}>
                 {post.summary}
               </p>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
