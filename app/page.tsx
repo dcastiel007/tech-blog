@@ -19,6 +19,20 @@ function estimateReadTime(text: string): number {
   return Math.max(1, Math.ceil(words / 200))
 }
 
+function decodeHtml(html: string): string {
+  return html
+    .replace(/&mdash;/g, '—')
+    .replace(/&ndash;/g, '–')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&rsquo;/g, "'")
+    .replace(/&lsquo;/g, "'")
+    .replace(/&rdquo;/g, '"')
+    .replace(/&ldquo;/g, '"')
+    .replace(/&hellip;/g, '…')
+}
+
 export default function HomePage() {
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
@@ -286,10 +300,7 @@ export default function HomePage() {
                     display: 'block',
                   }}
                 >
-                  {post.title}
-                </a>
-              </h2>
-              <p style={{ fontSize: 15, color: dark ? '#aaa' : '#555', lineHeight: 1.7, maxWidth: 680, marginBottom: 20 }}>
+                  {decodeHtml(post.title)}, color: dark ? '#aaa' : '#555', lineHeight: 1.7, maxWidth: 680, marginBottom: 20 }}>
                 {post.summary}
               </p>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -359,7 +370,7 @@ export default function HomePage() {
                       display: 'block',
                     }}
                   >
-                    {post.title}
+                    {decodeHtml(post.title)}
                   </a>
                 </h3>
 
