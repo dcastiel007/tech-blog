@@ -3,6 +3,8 @@ import { supabase } from '@/lib/supabase'
 
 const PAGE_SIZE = 20
 
+export const revalidate = 60 // cache for 60 seconds
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const page = parseInt(searchParams.get('page') || '0')
