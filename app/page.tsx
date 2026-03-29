@@ -14,6 +14,8 @@ type Post = {
   created_at: string
 }
 
+type ThemeMode = 'light' | 'dark' | 'system'
+
 function estimateReadTime(text: string): number {
   const words = text.split(' ').length
   return Math.max(1, Math.ceil(words / 200))
@@ -32,12 +34,32 @@ export default function HomePage() {
   const [hasMore, setHasMore] = useState(false)
   const [page, setPage] = useState(0)
   const [total, setTotal] = useState(0)
-  const [dark, setDark] = useState(false)
+  const [themeMode, setThemeMode] = useState<ThemeMode>('system')
+  const [systemDark, setSystemDark] = useState(false)
   const [search, setSearch] = useState('')
   const [searchInput, setSearchInput] = useState('')
   const [activeTag, setActiveTag] = useState<string | null>(null)
   const [allTags, setAllTags] = useState<string[]>([])
 
+  // Detect system preference
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    setSystemDark(mq.matches)
+    const handler = (e: MediaQueryListEvent) => setSystemDark(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+
+  const dark = themeMode === 'dark' || (themeMode === 'system' && systemDark)
+
+  const cycleTheme = () => {
+    setThemeMode(prev => prev === 'light' ? 'dark' : prev === 'dark' ? 'system' : 'light')
+  }
+
+  const themeIcon = themeMode === 'light' ? '○' : themeMode === 'dark' ? '●' : '◑'
+  const themeLabel = themeMode === 'light' ? 'Light' : themeMode === 'dark' ? 'Dark' : 'System'
+
+  // Fetch tags once on mount
   useEffect(() => {
     fetch('/api/posts?page=0')
       .then(r => r.json())
@@ -73,6 +95,7 @@ export default function HomePage() {
     setLoadingMore(false)
   }
 
+  // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => setSearch(searchInput), 400)
     return () => clearTimeout(timer)
@@ -110,10 +133,12 @@ export default function HomePage() {
         .search-input:focus { outline: none; border-color: ${accent} !important; }
         .title-link:hover { text-decoration: underline !important; text-underline-offset: 4px; }
         .load-more:hover { background: ${accent} !important; color: #fff !important; border-color: ${accent} !important; }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-        .post-card { animation: fadeUp 0.4s ease forwards; opacity: 0; }
+        .theme-btn:hover { border-color: ${accent} !important; color: ${accent} !important; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        .post-card { animation: fadeUp 0.3s ease forwards; opacity: 0; }
       `}</style>
 
+      {/* Header */}
       <header style={{
         borderBottom: `1px solid ${border}`,
         position: 'sticky',
@@ -133,7 +158,7 @@ export default function HomePage() {
                 LINKS WORTH READING
               </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ position: 'relative' }}>
                 <input
                   className="search-input"
@@ -154,27 +179,36 @@ export default function HomePage() {
                 />
                 <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: muted, fontSize: 12 }}>⌕</span>
               </div>
+              {/* Theme toggle: cycles light → dark → system */}
               <button
-                onClick={() => setDark(!dark)}
+                className="theme-btn"
+                onClick={cycleTheme}
+                title={`Theme: ${themeLabel} — click to cycle`}
                 style={{
                   background: 'transparent',
                   border: `1px solid ${border}`,
                   borderRadius: 4,
-                  padding: '6px 10px',
+                  padding: '5px 10px',
                   color: fg,
                   cursor: 'pointer',
                   fontSize: 14,
                   fontFamily: 'inherit',
-                  transition: 'border-color 0.2s'
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  whiteSpace: 'nowrap',
                 }}
               >
-                {dark ? '○' : '●'}
+                {themeIcon}
+                <span style={{ fontSize: 9, letterSpacing: '0.08em', color: muted }}>{themeLabel.toUpperCase()}</span>
               </button>
             </div>
           </div>
         </div>
       </header>
 
+      {/* Hero */}
       <div style={{ borderBottom: `3px solid ${accent}`, maxWidth: 1100, margin: '0 auto', paddingLeft: 24, paddingRight: 24 }}>
         <div style={{
           fontFamily: "'Playfair Display', serif",
@@ -190,37 +224,28 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* Tags */}
       {allTags.length > 0 && (
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '16px 24px', borderBottom: `1px solid ${border}` }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
             <span style={{ fontSize: 10, color: muted, letterSpacing: '0.1em', marginRight: 4 }}>FILTER</span>
-            <button
-              className="tag"
-              onClick={() => setActiveTag(null)}
-              style={{
-                background: !activeTag ? accent : tagBg,
-                color: !activeTag ? '#fff' : tagFg,
+            <button className="tag" onClick={() => setActiveTag(null)} style={{
+              background: !activeTag ? accent : tagBg, color: !activeTag ? '#fff' : tagFg,
+              border: 'none', borderRadius: 2, padding: '4px 10px',
+              fontSize: 11, fontFamily: 'inherit', letterSpacing: '0.05em', cursor: 'pointer'
+            }}>ALL</button>
+            {allTags.map(tag => (
+              <button key={tag} className="tag" onClick={() => setActiveTag(activeTag === tag ? null : tag)} style={{
+                background: activeTag === tag ? accent : tagBg, color: activeTag === tag ? '#fff' : tagFg,
                 border: 'none', borderRadius: 2, padding: '4px 10px',
                 fontSize: 11, fontFamily: 'inherit', letterSpacing: '0.05em', cursor: 'pointer'
-              }}
-            >ALL</button>
-            {allTags.map(tag => (
-              <button
-                key={tag}
-                className="tag"
-                onClick={() => setActiveTag(activeTag === tag ? null : tag)}
-                style={{
-                  background: activeTag === tag ? accent : tagBg,
-                  color: activeTag === tag ? '#fff' : tagFg,
-                  border: 'none', borderRadius: 2, padding: '4px 10px',
-                  fontSize: 11, fontFamily: 'inherit', letterSpacing: '0.05em', cursor: 'pointer'
-                }}
-              >{tag}</button>
+              }}>{tag}</button>
             ))}
           </div>
         </div>
       )}
 
+      {/* Posts */}
       <main style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px 64px' }}>
         {loading && (
           <div style={{ padding: '64px 0', textAlign: 'center', color: muted, fontSize: 12, letterSpacing: '0.1em' }}>
@@ -234,13 +259,14 @@ export default function HomePage() {
           </div>
         )}
 
+        {/* Featured post */}
         {!loading && posts.length > 0 && (() => {
           const post = posts[0]
           const readTime = estimateReadTime(post.summary)
           return (
             <div className="card post-card" style={{
               display: 'block', background: cardBg, borderBottom: `1px solid ${border}`,
-              padding: '40px 28px', marginTop: 1, animationDelay: '0.05s', direction: 'ltr',
+              padding: '40px 28px', marginTop: 1, animationDelay: '0s', direction: 'ltr',
             }}>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 16 }}>
                 <span style={{ background: accent, color: '#fff', fontSize: 9, letterSpacing: '0.15em', padding: '3px 8px', fontWeight: 500 }}>LATEST</span>
@@ -273,6 +299,7 @@ export default function HomePage() {
           )
         })()}
 
+        {/* Grid */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
@@ -283,7 +310,7 @@ export default function HomePage() {
             return (
               <div key={post.id} className="card post-card" style={{
                 display: 'block', background: cardBg, padding: '28px 24px',
-                animationDelay: `${0.05 * (i + 2)}s`, direction: 'ltr',
+                animationDelay: `${Math.min(i * 0.04, 0.3)}s`, direction: 'ltr',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                   {post.favicon_url && <img src={post.favicon_url} width={14} height={14} style={{ borderRadius: 2 }} alt="" />}
@@ -319,29 +346,19 @@ export default function HomePage() {
           })}
         </div>
 
+        {/* Load more */}
         {hasMore && (
           <div style={{ textAlign: 'center', padding: '40px 0' }}>
             <div style={{ fontSize: 11, color: muted, letterSpacing: '0.1em', marginBottom: 12 }}>
               SHOWING {posts.length} OF {total}
             </div>
-            <button
-              className="load-more"
-              onClick={handleLoadMore}
-              disabled={loadingMore}
-              style={{
-                background: 'transparent',
-                border: `1px solid ${border}`,
-                borderRadius: 2,
-                padding: '10px 32px',
-                color: fg,
-                cursor: loadingMore ? 'default' : 'pointer',
-                fontSize: 11,
-                fontFamily: 'inherit',
-                letterSpacing: '0.1em',
-                transition: 'all 0.15s',
-                opacity: loadingMore ? 0.5 : 1,
-              }}
-            >
+            <button className="load-more" onClick={handleLoadMore} disabled={loadingMore} style={{
+              background: 'transparent', border: `1px solid ${border}`, borderRadius: 2,
+              padding: '10px 32px', color: fg,
+              cursor: loadingMore ? 'default' : 'pointer',
+              fontSize: 11, fontFamily: 'inherit', letterSpacing: '0.1em',
+              transition: 'all 0.15s', opacity: loadingMore ? 0.5 : 1,
+            }}>
               {loadingMore ? 'LOADING...' : 'LOAD MORE'}
             </button>
           </div>
