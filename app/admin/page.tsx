@@ -366,7 +366,7 @@ export default function HomePage() {
       </main>
 
       <footer style={{ borderTop: `1px solid ${border}`, padding: '24px', textAlign: 'center', color: muted, fontSize: 11, letterSpacing: '0.1em' }}>
-        DAVID'S TECH FEED · SUMMARIZED BY AI · v2.1
+        DAVID'S TECH FEED · SUMMARIZED BY AI
       </footer>
     </div>
   )
