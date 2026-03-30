@@ -3,27 +3,25 @@ import { supabase } from '@/lib/supabase'
 
 const PAGE_SIZE = 20
 
-export const revalidate = 60 // cache for 60 seconds
+export const revalidate = 60
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const page = parseInt(searchParams.get('page') || '0')
   const tag = searchParams.get('tag') || ''
   const search = searchParams.get('search') || ''
+  const favoritesOnly = searchParams.get('favorites') === '1'
 
   let query = supabase
     .from('posts')
     .select('*', { count: 'exact' })
+    .order('is_pinned', { ascending: false })
     .order('created_at', { ascending: false })
     .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
-  if (tag) {
-    query = query.contains('keywords', [tag])
-  }
-
-  if (search) {
-    query = query.or(`title.ilike.%${search}%,summary.ilike.%${search}%`)
-  }
+  if (tag) query = query.contains('keywords', [tag])
+  if (search) query = query.or(`title.ilike.%${search}%,summary.ilike.%${search}%`)
+  if (favoritesOnly) query = query.eq('is_favorite', true)
 
   const { data, error, count } = await query
 

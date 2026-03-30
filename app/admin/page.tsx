@@ -10,6 +10,8 @@ type Post = {
   keywords: string[]
   domain: string
   created_at: string
+  is_favorite: boolean
+  is_pinned: boolean
 }
 
 export default function AdminPage() {
@@ -24,7 +26,7 @@ export default function AdminPage() {
 
   async function fetchPosts(pw: string) {
     setLoadingPosts(true)
-    const res = await fetch('/api/posts')
+    const res = await fetch('/api/posts?page=0&limit=100')
     const data = await res.json()
     const postList = data.posts || data
     if (Array.isArray(postList)) {
@@ -97,6 +99,42 @@ export default function AdminPage() {
     fetchPosts(password)
   }
 
+  async function toggleFavorite(post: Post) {
+    await fetch(`/api/posts/${post.id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-password': password,
+      },
+      body: JSON.stringify({ is_favorite: !post.is_favorite }),
+    })
+    fetchPosts(password)
+  }
+
+  async function togglePin(post: Post) {
+    // Unpin all others first, then toggle this one
+    const newPinState = !post.is_pinned
+    // If pinning, unpin others
+    if (newPinState) {
+      for (const p of posts.filter(p => p.is_pinned && p.id !== post.id)) {
+        await fetch(`/api/posts/${p.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'x-admin-password': password },
+          body: JSON.stringify({ is_pinned: false }),
+        })
+      }
+    }
+    await fetch(`/api/posts/${post.id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-password': password,
+      },
+      body: JSON.stringify({ is_pinned: newPinState }),
+    })
+    fetchPosts(password)
+  }
+
   if (!passwordConfirmed) {
     return (
       <main className="min-h-screen bg-gray-950 text-gray-100 flex items-center justify-center p-6">
@@ -113,10 +151,7 @@ export default function AdminPage() {
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
               />
             </div>
-            <button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-lg transition-colors"
-            >
+            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-lg transition-colors">
               Enter
             </button>
           </form>
@@ -150,9 +185,7 @@ export default function AdminPage() {
             {status === 'loading' ? 'Processing...' : 'Create Post'}
           </button>
           {message && (
-            <p className={`text-sm ${status === 'error' ? 'text-red-400' : 'text-green-400'}`}>
-              {message}
-            </p>
+            <p className={`text-sm ${status === 'error' ? 'text-red-400' : 'text-green-400'}`}>{message}</p>
           )}
         </form>
 
@@ -197,13 +230,31 @@ export default function AdminPage() {
         {loadingPosts && <p className="text-gray-500 text-sm">Loading...</p>}
         <div className="space-y-3">
           {posts.map((post) => (
-            <div key={post.id} className="border border-gray-800 rounded-xl p-4">
+            <div key={post.id} className={`border rounded-xl p-4 ${post.is_pinned ? 'border-blue-700 bg-blue-950/30' : 'border-gray-800'}`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    {post.is_pinned && <span className="text-xs text-blue-400 font-medium">📌 PINNED</span>}
+                    {post.is_favorite && <span className="text-xs text-yellow-400">★ FAVORITE</span>}
+                  </div>
                   <p className="font-medium text-white text-sm truncate">{post.title}</p>
                   <p className="text-xs text-gray-500 mt-0.5">{post.domain}</p>
                 </div>
-                <div className="flex gap-2 flex-shrink-0">
+                <div className="flex gap-2 flex-shrink-0 flex-wrap justify-end">
+                  <button
+                    onClick={() => togglePin(post)}
+                    title={post.is_pinned ? 'Unpin' : 'Pin to top'}
+                    className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${post.is_pinned ? 'bg-blue-700 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`}
+                  >
+                    📌
+                  </button>
+                  <button
+                    onClick={() => toggleFavorite(post)}
+                    title={post.is_favorite ? 'Remove from favorites' : 'Add to favorites'}
+                    className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${post.is_favorite ? 'bg-yellow-600 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`}
+                  >
+                    ★
+                  </button>
                   <button
                     onClick={() => setEditingPost(post)}
                     className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-1.5 rounded-lg transition-colors"

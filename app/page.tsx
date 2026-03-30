@@ -12,6 +12,8 @@ type Post = {
   favicon_url: string | null
   domain: string | null
   created_at: string
+  is_favorite: boolean
+  is_pinned: boolean
 }
 
 type ThemeMode = 'light' | 'dark' | 'system'
@@ -39,9 +41,9 @@ export default function HomePage() {
   const [search, setSearch] = useState('')
   const [searchInput, setSearchInput] = useState('')
   const [activeTag, setActiveTag] = useState<string | null>(null)
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
   const [allTags, setAllTags] = useState<string[]>([])
 
-  // Detect system preference
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
     setSystemDark(mq.matches)
@@ -59,7 +61,6 @@ export default function HomePage() {
   const themeIcon = themeMode === 'light' ? '○' : themeMode === 'dark' ? '●' : '◑'
   const themeLabel = themeMode === 'light' ? 'Light' : themeMode === 'dark' ? 'Dark' : 'System'
 
-  // Fetch tags once on mount
   useEffect(() => {
     fetch('/api/posts?page=0')
       .then(r => r.json())
@@ -70,10 +71,11 @@ export default function HomePage() {
       })
   }, [])
 
-  const fetchPosts = useCallback(async (pageNum: number, tag: string | null, searchTerm: string, replace: boolean) => {
+  const fetchPosts = useCallback(async (pageNum: number, tag: string | null, searchTerm: string, replace: boolean, favoritesOnly: boolean) => {
     const params = new URLSearchParams({ page: String(pageNum) })
     if (tag) params.set('tag', tag)
     if (searchTerm) params.set('search', searchTerm)
+    if (favoritesOnly) params.set('favorites', '1')
 
     const res = await fetch(`/api/posts?${params}`)
     const data = await res.json()
@@ -86,16 +88,15 @@ export default function HomePage() {
 
   useEffect(() => {
     setLoading(true)
-    fetchPosts(0, activeTag, search, true).finally(() => setLoading(false))
-  }, [activeTag, search])
+    fetchPosts(0, activeTag, search, true, showFavoritesOnly).finally(() => setLoading(false))
+  }, [activeTag, search, showFavoritesOnly])
 
   const handleLoadMore = async () => {
     setLoadingMore(true)
-    await fetchPosts(page + 1, activeTag, search, false)
+    await fetchPosts(page + 1, activeTag, search, false, showFavoritesOnly)
     setLoadingMore(false)
   }
 
-  // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => setSearch(searchInput), 400)
     return () => clearTimeout(timer)
@@ -109,6 +110,11 @@ export default function HomePage() {
   const border = dark ? '#222' : '#e0d8cc'
   const tagBg = dark ? '#1a1a1a' : '#ede8df'
   const tagFg = dark ? '#888' : '#666'
+
+  // Pinned post is always shown first
+  const pinnedPost = posts.find(p => p.is_pinned)
+  const featuredPost = pinnedPost || posts[0]
+  const gridPosts = posts.filter(p => p.id !== featuredPost?.id)
 
   return (
     <div style={{
@@ -134,6 +140,7 @@ export default function HomePage() {
         .title-link:hover { text-decoration: underline !important; text-underline-offset: 4px; }
         .load-more:hover { background: ${accent} !important; color: #fff !important; border-color: ${accent} !important; }
         .theme-btn:hover { border-color: ${accent} !important; color: ${accent} !important; }
+        .fav-filter:hover { border-color: ${accent} !important; color: ${accent} !important; }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         .post-card { animation: fadeUp 0.3s ease forwards; opacity: 0; }
       `}</style>
@@ -141,12 +148,8 @@ export default function HomePage() {
       {/* Header */}
       <header style={{
         borderBottom: `1px solid ${border}`,
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        background: bg,
-        backdropFilter: 'blur(12px)',
-        direction: 'ltr',
+        position: 'sticky', top: 0, zIndex: 100,
+        background: bg, backdropFilter: 'blur(12px)', direction: 'ltr',
       }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
@@ -166,38 +169,41 @@ export default function HomePage() {
                   onChange={e => setSearchInput(e.target.value)}
                   placeholder="Search..."
                   style={{
-                    background: 'transparent',
-                    border: `1px solid ${border}`,
-                    borderRadius: 4,
-                    padding: '6px 12px 6px 32px',
-                    color: fg,
-                    fontSize: 12,
-                    width: 160,
-                    fontFamily: 'inherit',
-                    transition: 'border-color 0.2s'
+                    background: 'transparent', border: `1px solid ${border}`,
+                    borderRadius: 4, padding: '6px 12px 6px 32px',
+                    color: fg, fontSize: 12, width: 160,
+                    fontFamily: 'inherit', transition: 'border-color 0.2s'
                   }}
                 />
                 <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: muted, fontSize: 12 }}>⌕</span>
               </div>
-              {/* Theme toggle: cycles light → dark → system */}
+              {/* Favorites filter */}
+              <button
+                className="fav-filter"
+                onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                title="Show favorites only"
+                style={{
+                  background: showFavoritesOnly ? accent : 'transparent',
+                  border: `1px solid ${showFavoritesOnly ? accent : border}`,
+                  borderRadius: 4, padding: '5px 10px',
+                  color: showFavoritesOnly ? '#fff' : fg,
+                  cursor: 'pointer', fontSize: 14,
+                  transition: 'all 0.2s',
+                }}
+              >
+                ★
+              </button>
+              {/* Theme toggle */}
               <button
                 className="theme-btn"
                 onClick={cycleTheme}
-                title={`Theme: ${themeLabel} — click to cycle`}
+                title={`Theme: ${themeLabel}`}
                 style={{
-                  background: 'transparent',
-                  border: `1px solid ${border}`,
-                  borderRadius: 4,
-                  padding: '5px 10px',
-                  color: fg,
-                  cursor: 'pointer',
-                  fontSize: 14,
-                  fontFamily: 'inherit',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  whiteSpace: 'nowrap',
+                  background: 'transparent', border: `1px solid ${border}`,
+                  borderRadius: 4, padding: '5px 10px',
+                  color: fg, cursor: 'pointer', fontSize: 14,
+                  fontFamily: 'inherit', transition: 'all 0.2s',
+                  display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap',
                 }}
               >
                 {themeIcon}
@@ -213,11 +219,8 @@ export default function HomePage() {
         <div style={{
           fontFamily: "'Playfair Display', serif",
           fontSize: 'clamp(48px, 8vw, 96px)',
-          fontWeight: 900,
-          lineHeight: 0.9,
-          letterSpacing: '-3px',
-          padding: '32px 0 24px',
-          color: fg
+          fontWeight: 900, lineHeight: 0.9, letterSpacing: '-3px',
+          padding: '32px 0 24px', color: fg
         }}>
           THE<br />
           <span style={{ color: accent, fontStyle: 'italic' }}>FEED</span>
@@ -252,16 +255,15 @@ export default function HomePage() {
             LOADING...
           </div>
         )}
-
         {!loading && posts.length === 0 && (
           <div style={{ padding: '64px 0', textAlign: 'center', color: muted, fontSize: 12, letterSpacing: '0.1em' }}>
             NO RESULTS
           </div>
         )}
 
-        {/* Featured post */}
-        {!loading && posts.length > 0 && (() => {
-          const post = posts[0]
+        {/* Featured / Pinned post */}
+        {!loading && featuredPost && (() => {
+          const post = featuredPost
           const readTime = estimateReadTime(post.summary)
           return (
             <div className="card post-card" style={{
@@ -269,7 +271,13 @@ export default function HomePage() {
               padding: '40px 28px', marginTop: 1, animationDelay: '0s', direction: 'ltr',
             }}>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 16 }}>
-                <span style={{ background: accent, color: '#fff', fontSize: 9, letterSpacing: '0.15em', padding: '3px 8px', fontWeight: 500 }}>LATEST</span>
+                <span style={{
+                  background: post.is_pinned ? '#2563eb' : accent,
+                  color: '#fff', fontSize: 9, letterSpacing: '0.15em', padding: '3px 8px', fontWeight: 500
+                }}>
+                  {post.is_pinned ? 'PINNED' : 'LATEST'}
+                </span>
+                {post.is_favorite && <span style={{ color: '#f59e0b', fontSize: 14 }}>★</span>}
                 <span style={{ fontSize: 11, color: muted }}>{post.domain}</span>
                 <span style={{ fontSize: 11, color: muted }}>·</span>
                 <span style={{ fontSize: 11, color: muted }}>{readTime} min read</span>
@@ -305,7 +313,7 @@ export default function HomePage() {
           gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
           gap: 1, background: border, marginTop: 1
         }}>
-          {posts.slice(1).map((post, i) => {
+          {gridPosts.map((post, i) => {
             const readTime = estimateReadTime(post.summary)
             return (
               <div key={post.id} className="card post-card" style={{
@@ -317,6 +325,7 @@ export default function HomePage() {
                   <span style={{ fontSize: 10, color: muted, letterSpacing: '0.08em' }}>{post.domain}</span>
                   <span style={{ fontSize: 10, color: muted }}>·</span>
                   <span style={{ fontSize: 10, color: muted }}>{readTime}m</span>
+                  {post.is_favorite && <span style={{ color: '#f59e0b', fontSize: 12, marginLeft: 'auto' }}>★</span>}
                 </div>
                 <h3 style={{ marginBottom: 10 }}>
                   <a href={post.url} target="_blank" rel="noopener noreferrer" className="title-link" style={{
@@ -366,7 +375,7 @@ export default function HomePage() {
       </main>
 
       <footer style={{ borderTop: `1px solid ${border}`, padding: '24px', textAlign: 'center', color: muted, fontSize: 11, letterSpacing: '0.1em' }}>
-        DAVID'S TECH FEED · SUMMARIZED BY AI · v2.1
+        DAVID'S TECH FEED · SUMMARIZED BY AI · v3.0
       </footer>
     </div>
   )
