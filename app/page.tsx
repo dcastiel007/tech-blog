@@ -43,6 +43,7 @@ export default function HomePage() {
   const [activeTag, setActiveTag] = useState<string | null>(null)
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
   const [allTags, setAllTags] = useState<string[]>([])
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
@@ -66,9 +67,11 @@ export default function HomePage() {
       .then(r => r.json())
       .then(data => {
         const tags = new Set<string>()
-        data.posts?.forEach((p: Post) => p.keywords?.forEach((k: string) => tags.add(k)))
+        const list: Post[] = Array.isArray(data?.posts) ? data.posts : []
+        list.forEach((p: Post) => p.keywords?.forEach((k: string) => tags.add(k)))
         setAllTags(Array.from(tags).slice(0, 20))
       })
+      .catch(() => setAllTags([]))
   }, [])
 
   const fetchPosts = useCallback(async (pageNum: number, tag: string | null, searchTerm: string, replace: boolean, favoritesOnly: boolean) => {
@@ -77,13 +80,29 @@ export default function HomePage() {
     if (searchTerm) params.set('search', searchTerm)
     if (favoritesOnly) params.set('favorites', '1')
 
-    const res = await fetch(`/api/posts?${params}`)
-    const data = await res.json()
+    try {
+      const res = await fetch(`/api/posts?${params}`)
+      const data = await res.json().catch(() => null)
+      const incoming: Post[] = Array.isArray(data?.posts) ? data.posts : []
 
-    setPosts(prev => replace ? data.posts : [...prev, ...data.posts])
-    setHasMore(data.hasMore)
-    setTotal(data.total)
-    setPage(pageNum)
+      if (!res.ok) {
+        setError('הפיד לא זמין כרגע. נסה שוב בעוד מספר דקות.')
+        if (replace) setPosts([])
+        setHasMore(false)
+        return
+      }
+
+      setError(null)
+      setPosts(prev => replace ? incoming : [...prev, ...incoming])
+      setHasMore(Boolean(data?.hasMore))
+      setTotal(typeof data?.total === 'number' ? data.total : 0)
+      setPage(pageNum)
+    } catch (err) {
+      console.error('[fetchPosts] failed', err)
+      setError('לא הצלחנו להתחבר לשרת. בדוק את החיבור ונסה שוב.')
+      if (replace) setPosts([])
+      setHasMore(false)
+    }
   }, [])
 
   useEffect(() => {
@@ -255,7 +274,29 @@ export default function HomePage() {
             LOADING...
           </div>
         )}
-        {!loading && posts.length === 0 && (
+        {!loading && error && posts.length === 0 && (
+          <div style={{ padding: '64px 24px', textAlign: 'center', direction: 'rtl' }}>
+            <div style={{ color: accent, fontSize: 12, letterSpacing: '0.1em', marginBottom: 12 }}>
+              UNAVAILABLE
+            </div>
+            <div style={{ color: fg, fontSize: 15, marginBottom: 24, opacity: 0.85 }}>
+              {error}
+            </div>
+            <button
+              onClick={() => {
+                setLoading(true)
+                fetchPosts(0, activeTag, search, true, showFavoritesOnly).finally(() => setLoading(false))
+              }}
+              style={{
+                background: 'none', border: `1px solid ${border}`, color: fg,
+                padding: '10px 24px', fontSize: 12, letterSpacing: '0.1em',
+                fontFamily: 'inherit', cursor: 'pointer', borderRadius: 2
+              }}>
+              נסה שוב
+            </button>
+          </div>
+        )}
+        {!loading && !error && posts.length === 0 && (
           <div style={{ padding: '64px 0', textAlign: 'center', color: muted, fontSize: 12, letterSpacing: '0.1em' }}>
             NO RESULTS
           </div>
@@ -369,6 +410,25 @@ export default function HomePage() {
               transition: 'all 0.15s', opacity: loadingMore ? 0.5 : 1,
             }}>
               {loadingMore ? 'LOADING...' : 'LOAD MORE'}
+            </button>
+          </div>
+        )}
+
+        {/* Load-more failed, but existing posts are still on screen */}
+        {!loading && error && posts.length > 0 && (
+          <div style={{
+            textAlign: 'center', padding: '24px 0', direction: 'rtl',
+            color: muted, fontSize: 13
+          }}>
+            {error}{' '}
+            <button
+              onClick={() => handleLoadMore()}
+              style={{
+                background: 'none', border: 'none', color: accent,
+                fontFamily: 'inherit', fontSize: 13, cursor: 'pointer',
+                textDecoration: 'underline', padding: 0
+              }}>
+              נסה שוב
             </button>
           </div>
         )}
